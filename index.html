@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f7f5ee">
+  <meta name="description" content="原始から未来へ。選択で文明の歴史を紡ぐローグライク。">
+  <title>CivRogue | 文明年代記</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="events.js"></script>
+  <script defer src="ideologies.js"></script>
+  <script defer src="chronicle.js"></script>
+  <script defer src="crossroads.js"></script>
+  <script defer src="history.js"></script>
+  <script defer src="achievements.js"></script>
+  <script defer src="balance.js"></script>
+  <script defer src="engine.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <div class="brand" aria-label="CivRogue">
+        <span class="brand-mark" aria-hidden="true">✧</span>
+        <span>CivRogue</span>
+        <small id="rules-version">v1.0</small>
+      </div>
+      <nav class="tabs" aria-label="画面切替">
+        <button id="game-tab" type="button" aria-controls="game-view" aria-pressed="true">プレー</button>
+        <button id="report-tab" type="button" aria-controls="report-view" aria-pressed="false">年代記<span id="history-count">0</span></button>
+      </nav>
+      <span class="save-state" id="save-state" role="status"><i></i>自動保存済み</span>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero" aria-labelledby="civilization-name">
+      <div class="hero-copy">
+        <div class="hero-kicker"><span></span> 文 明 年 代 記</div>
+        <h1 id="civilization-name">ヴァレリア文明</h1>
+        <p><span id="hero-year">紀元前10,000年</span><span class="hero-dot">·</span><span id="hero-era">原始時代</span></p>
+      </div>
+      <button class="seed-pill" id="toggle-settings" aria-label="乱数シードと新規プレー" aria-expanded="false" aria-controls="seed-settings" type="button"><span aria-hidden="true">⊞</span><span id="seed-label">CIV-1042</span><span aria-hidden="true">⌄</span></button>
+    </section>
+
+    <form class="seed-settings surface" id="seed-settings" hidden>
+      <div><label for="seed-input">新しい歴史を始める</label><p>開始すると現在のセーブを上書きします。</p></div>
+      <div class="seed-fields">
+        <input id="seed-input" aria-label="乱数シード" maxlength="64" autocomplete="off" spellcheck="false" placeholder="乱数シード">
+        <button class="secondary" id="random-seed" type="button">ランダム</button>
+        <button class="primary" type="submit">開始</button>
+      </div>
+    </form>
+
+    <section class="journey surface" aria-label="時代と進行状況">
+      <div class="journey-header">
+        <span>時代の歩み</span>
+        <span id="journey-progress"><strong>01</strong> / 90 イベント</span>
+      </div>
+      <ol id="eras"></ol>
+    </section>
+
+    <div id="game-view" class="play-layout">
+      <section class="surface event-panel" id="event-panel" aria-labelledby="event-title">
+        <div id="event-intro">
+          <div class="event-meta"><span id="event-category" class="category">社会</span><span id="event-counter"></span></div>
+          <h2 id="event-title" tabindex="-1">火を囲む人々</h2>
+          <p id="event-body"></p>
+          <p id="event-incident" class="event-incident" hidden></p>
+        </div>
+        <div id="action-area">
+          <h3 id="action-label" class="section-label">文明の方針を選ぶ</h3>
+          <div id="choices" class="choices"></div>
+        </div>
+        <div id="last-result" class="last-result" role="status" hidden></div>
+      </section>
+
+      <aside class="sidebar" aria-label="文明の情報">
+        <section class="surface status-panel">
+          <div class="panel-heading"><span class="panel-icon" aria-hidden="true">▥</span><h2>文明の状態</h2></div>
+          <div id="metrics"></div>
+          <p id="current-regime" class="current-regime"></p>
+          <details class="institutions" id="institutions">
+            <summary>思想・制度・支配国</summary>
+            <div id="institution-content"></div>
+          </details>
+        </section>
+
+        <section class="surface victory-panel">
+          <div class="panel-heading"><span class="panel-icon" aria-hidden="true">⚑</span><h2>勝利条件</h2><span id="victory-count" class="count">0 / 6</span></div>
+          <div id="victories"></div>
+        </section>
+
+        <section class="surface" id="achievement-panel" aria-labelledby="achievement-title" hidden>
+          <div class="panel-heading"><h2 id="achievement-title">歴史的偉業</h2><span id="achievement-count" class="count">0 / 36</span></div>
+          <details class="institutions">
+            <summary>獲得した偉業を見る</summary>
+            <div id="achievement-list"></div>
+          </details>
+        </section>
+
+        <section class="surface agent-panel">
+          <div class="panel-heading"><span class="panel-icon" aria-hidden="true">◎</span><h2>AIプレイヤー</h2><span id="agent-status" class="count">待機中</span></div>
+          <div class="agent-actions">
+            <select id="strategy" aria-label="AIプレイヤーの方針"></select>
+            <button type="button" class="primary" id="toggle-agent">自動プレー</button>
+            <button type="button" class="secondary" id="step-agent">AIで1手</button>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section id="report-view" class="report" aria-label="文明史アルバム" hidden></section>
+
+    <footer><span>CivRogue v1.0</span><a href="album.html">保存した年代記を開く</a></footer>
+  </main>
+  <template id="choice-template">
+    <button class="choice" type="button">
+      <span class="choice-letter"></span>
+      <span class="choice-text"><strong></strong><span></span></span>
+      <span class="choice-arrow" aria-hidden="true">→</span>
+    </button>
+  </template>
+</body>
+</html>
