@@ -10,6 +10,9 @@
   let timer = null;
   let activeView = "game";
   let albumFrame = null;
+  let albumReturn = "game";
+  let book;
+  let bookAssets;
   let state = load();
   let storageWarning = "";
 
@@ -289,16 +292,73 @@
     if (!albumFrame || event.source !== albumFrame.contentWindow || event.origin !== location.origin) return;
     if (event.data?.type === "civrogue-album-ready") sendAlbum();
     if (event.data?.type === "civrogue-album-close") {
-      show("game");
-      byId("report-tab").focus();
+      show(albumReturn);
+      if (albumReturn === "game") byId("report-tab").focus();
     }
   });
+
+  function loadBook() {
+    const script = source => new Promise((resolve, reject) => {
+      const element = node("script");
+      element.src = source;
+      element.onload = resolve;
+      element.onerror = reject;
+      document.head.append(element);
+    });
+    bookAssets ??= (async () => {
+      const css = node("link");
+      css.rel = "stylesheet";
+      css.href = "play/book.css";
+      document.head.append(css);
+      await Promise.all(["art-trophies", "art-stamps", "art-scenes"].map(name => script(`album/${name}.js`)));
+      await script("album/catalog.js");
+      await script("album/model.js");
+      await script("album/ui.js");
+      await Promise.all([script("play/sound.js"), script("play/view.js")]);
+      await script("play/book.js");
+      return window.CivPlay.mount(byId("book-view"), {
+        getState: () => state,
+        saved: () => !storageWarning,
+        choose(index, eventId, turn, choiceId) {
+          if (activeView !== "book" || state.history.length !== turn || state.current !== eventId ||
+              game.publicEvent(state)?.options[index]?.id !== choiceId || !game.choose(state, index, "manual")) return false;
+          save();
+          return true;
+        },
+        finish(finish) { game.resolveVictory(state, finish); save(); },
+        start(seed) { state = game.create(seed); save(); },
+        album: () => show("report"),
+        lightweight: () => { show("game"); byId("open-book").focus(); },
+      });
+    })();
+    return bookAssets;
+  }
+
+  async function openBook() {
+    const trigger = byId("open-book");
+    if (trigger.disabled) return;
+    trigger.disabled = true;
+    trigger.textContent = "絵本を開いています";
+    stopAgent();
+    try {
+      book ??= await loadBook();
+      if (activeView === "game") show("book");
+    } catch {
+      trigger.textContent = "絵本を読み込めません";
+      bookAssets = null;
+    } finally {
+      trigger.disabled = false;
+      if (book) trigger.textContent = "絵本で遊ぶ";
+      if (activeView === "game") renderSidebar();
+    }
+  }
 
   function render() {
     renderJourney();
     renderEvent();
     renderSidebar();
     if (activeView === "report") renderReport();
+    if (activeView === "book") book?.sync();
   }
 
   function show(view) {
@@ -306,12 +366,18 @@
       stopAgent();
       renderSidebar();
     }
+    if (view === "report") albumReturn = activeView === "book" ? "book" : "game";
+    if (activeView === "book" && view !== "book") book.pause();
     activeView = view;
     document.body.classList.toggle("reading-album", view === "report");
+    document.body.classList.toggle("playing-book", view === "book");
+    byId("book-view").hidden = view !== "book";
     for (const name of ["game", "report"]) {
       byId(`${name}-view`).hidden = name !== view;
       byId(`${name}-tab`).setAttribute("aria-pressed", String(name === view));
     }
+    if (view === "game") render();
+    if (view === "book") book.enter();
     if (view === "report") {
       renderReport();
       albumFrame.focus({ preventScroll: true });
@@ -319,7 +385,7 @@
   }
 
   function choose(index, actor) {
-    if (!game.choose(state, index, actor)) return;
+    if (activeView !== "game" || !game.choose(state, index, actor)) return;
     if (state.end) stopAgent();
     save();
     render();
@@ -378,6 +444,7 @@
     show("game");
     render();
   });
+  byId("open-book").addEventListener("click", openBook);
   byId("step-agent").addEventListener("click", agentStep);
   byId("toggle-agent").addEventListener("click", () => {
     if (running) {
@@ -397,4 +464,5 @@
 
   save();
   render();
+  if (new URLSearchParams(location.search).get("view") === "book") openBook();
 })();

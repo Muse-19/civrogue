@@ -24,13 +24,16 @@
       <div class="brand" aria-label="CivRogue">
         <span class="brand-mark" aria-hidden="true">✧</span>
         <span>CivRogue</span>
-        <small id="rules-version">v1.0</small>
+        <small id="rules-version">v0.8</small>
       </div>
       <nav class="tabs" aria-label="画面切替">
         <button id="game-tab" type="button" aria-controls="game-view" aria-pressed="true">プレー</button>
         <button id="report-tab" type="button" aria-controls="report-view" aria-pressed="false">年代記<span id="history-count">0</span></button>
       </nav>
-      <span class="save-state" id="save-state" role="status"><i></i>自動保存済み</span>
+      <div class="topbar-actions">
+        <button class="secondary book-switch" id="open-book" type="button">絵本で遊ぶ</button>
+        <span class="save-state" id="save-state" role="status"><i></i>自動保存済み</span>
+      </div>
     </div>
   </header>
 
@@ -113,8 +116,9 @@
 
     <section id="report-view" class="report" aria-label="文明史アルバム" hidden></section>
 
-    <footer><span>CivRogue v1.0</span><a href="album.html">保存した年代記を開く</a></footer>
+    <footer><span>CivRogue v1.1</span><a href="album.html">保存した年代記を開く</a></footer>
   </main>
+  <section id="book-view" aria-label="動く文明の絵本" hidden></section>
   <template id="choice-template">
     <button class="choice" type="button">
       <span class="choice-letter"></span>
