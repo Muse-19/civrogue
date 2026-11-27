@@ -428,7 +428,7 @@
       marks("m0 301 277-45 120-54 323-19M95 315l34-5m370-105 39-2m-179 59 28-12m173 66 43-2m-105 38 34-5m-314-7 63-11","#e6ebca");
     s+=fields(505,174,1.25)+fields(607,166,.9)+tree(52,214,1.14,2)+tree(274,177,.9,2);
     s+=shrine(190,220,1.78)+hut(302,197,.6)+cottage(352,202,.63,"#ba7d5e")+cottage(377,195,.52,"#ac815d");
-    if (art.flags.includes("market")||art.generic) s+=market(101,261,1.1)+market(276,239,.72);
+    if (!art.crisis && (art.flags.includes("market")||art.generic)) s+=market(101,261,1.1)+market(276,239,.72);
     if (art.flags.some(f=>["market","accord","beacon_chart"].includes(f))||art.generic) s+=ship(457,318,1.45)+ship(601,247,.76,"#f3c477");
     return s+person(129,262,.88,roof)+person(147,259,.67,jade)+cart(337,241,.91)+
       path("M0 360q86-12 156-11l-60 31H0Z","#ca9464")+reed(34,368,1.2)+line("m601 353 23-1m14-37 39-1m-157 55 54-5","#5daba9",2.4);
@@ -538,5 +538,65 @@
     return svg(360,136,"文明の終幕を表す象徴図",art);
   }
 
-  window.AlbumScenes = { cover, era, finale, chapterSubtitles };
+  // Small overlays on the five chapter landscapes. Simulation data only selects drawings.
+  function live(index, state) {
+    const era = [0,1,2,3,4].includes(index) ? index : 0;
+    const scene = [village,port,stronghold,railCity,starlitCity][era];
+    const has = id => state.flags.includes(id);
+    const earned = id => state.trophies.includes(id);
+    const flag = Object.hasOwn(regimeFlags,state.regime) ? regimeFlags[state.regime] : jade;
+    const x = [450,523,510,622,638][era];
+    const y = [227,204,246,262,253][era];
+    const movement = (name, content) => `<g class="live-${name}">${content}</g>`;
+    let details = "";
+    if (has("academy") || has("shared_sky")) details += era>=3?observatory(x,y,.75):skyCourt(x,y,.9);
+    if (earned("pyramid")) details += group(354,213,1.95,landmark({trophies:["pyramid"]}));
+    if (earned("library")) details += hall(385,233,.77,brass);
+    if (earned("cathedral")) details += tower(584,185,.72,flag)+shrine(608,194,.74);
+    else if (has("faith_practice")) details += shrine(588,193,.79);
+    if (earned("printing")) {
+      details += cottage(114,246,.88,"#a9786f")+group(145,235,.78,shape("M-13-13l23-1 4 15-23 2Z","#fff1c7")+line("m-7-8 13-1m-11 5 12-1",ink,1.6));
+    }
+    if (has("army")) details += tower(163,224,.86,flag);
+    if (has("assembly") || has("constitution") || has("responsive_council")) {
+      details += era===0?hut(137,235,.8):hall(239,231,.64,flag);
+    }
+    if (has("cultural_houses") && !earned("library")) details+=theatre(325,230,.74);
+    if (has("market") || has("guild_credit")) {
+      if (state.crisis) details += group(92,294,.93,cottage(0,0,.83,"#8d8575")+shape("M-10-18h19v17h-19Z","#976e54")+line("M-11-10h20",ink,1.8));
+      else details += market(91,292,.84)+person(126,299,.7,brass);
+    }
+    if (has("banking_network")) details += hall(650,284,.69,brass);
+    if (state.metrics.wealth >= 67 && !state.crisis) {
+      details += movement("cart",cart(288,306,1)+person(312,309,.88,roof));
+      if (era===1 && has("market")) details += movement("ship",ship(542,346,1.02,jade));
+    }
+    if (earned("megalith") && era===0) details += group(452,240,1.48,landmark({trophies:["megalith"]}));
+    if (earned("rails")) {
+      details += line("M-40 319Q90 299 273 322m-308 7q130-20 308 2","#675e51",2.2);
+      details += movement("train",train(102,310,1.04));
+    }
+    if (earned("station")) {
+      details += movement("orbit",group(290,76,1.1,
+        shape("M-49-12h33v24h-33Zm66 0h33v24H17Z","#8bb2c3",1.9)+
+        line("M-50 0h101m-84-11v22m16-22v22m50-22v22m17-22v22",ink,1.1)+
+        shape("M-17-7h34l9 7-9 8h-35Z","#f9edcf")+circle(5,0,4,"#96bfbb",ink)));
+    }
+    if (state.regime) details += group(658,284,1,line("M0 0v-53",ink,2.4)+movement("flag",shape("M1-52q18-5 35 2l-8 8 9 8q-17-5-36 0Z",flag,1.5)));
+    if (state.metrics.order <= 28 && !state.ending) details += person(479,319,.99,"#b98c69")+person(458,326,.92,"#ad7561");
+    if (state.recovery) {
+      details += group(546,333,.94,path("M-28-2 34-5 44 9-21 10Z","#e6c99b")+
+        shape("M-23-7h27v9h-27Zm16-8h29v7H-7Zm15 7h22v7H8Z","#c69b6c")+person(41,3,.9,jade));
+    }
+    if (state.disaster) details += path("M0 0H720V380H0Z","#53487442")+
+      marks("M18 29l-7 20m62-12-9 19m90-38-11 23m397-20-11 23m58 38-8 17m86-52-10 21m37 37-8 18","#a9cad5");
+    if (state.crisis) details += path("M0 0H720V380H0Z","#685f471d");
+    if (state.ending==="collapse") details += path("M0 0H720V380H0Z","#74534f45");
+    const light = era===4?"#d4f0d674":"#f8f6d788";
+    if (era===0) details += movement("smoke",circle(270,223,4,light)+circle(265,211,7,light));
+    if (has("industry") && era===3) details += movement("smoke",circle(213,81,7,light)+circle(206,69,9,light));
+    return svg(720,380,"現在の文明を表すミニチュア景観",scene(state)+details+dots(360,720,380,seedNumber(state.seed)+era*79));
+  }
+
+  window.AlbumScenes = { cover, era, live, finale, chapterSubtitles };
 })();
